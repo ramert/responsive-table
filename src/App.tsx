@@ -1,6 +1,7 @@
 import * as React from 'react';
 import styled from 'styled-components';
-import { Component, Row } from './components/table';
+import { Table, IRow } from './components/table';
+import { Label } from './components/table/Row';
 
 const SApp = styled.div`
   display: flex;
@@ -11,10 +12,11 @@ const LeftPanel = styled.div`
   min-width: 300px;
 `;
 
-export interface IWidthColumns {
-  key: string;
-  width: number;
-}
+const Button = styled.button`
+  border: 1px solid blue;
+  padding: 12px;
+  background: lightgray;
+`;
 
 export interface IGenericListColumn<T = {}> {
   /**
@@ -84,6 +86,7 @@ export interface IGenericListColumn<T = {}> {
    * TODO: lose the any.
    */
   renderer?: (
+    label: string,
     value: any,
     row?: T,
     isEditable?: boolean
@@ -108,6 +111,8 @@ export interface IGenericListColumn<T = {}> {
    * have this prop.
    */
   isEnabled?: (item: T | null) => boolean;
+
+  alwaysShow?: boolean;
 }
 
 const columns: IGenericListColumn[] = [
@@ -115,7 +120,8 @@ const columns: IGenericListColumn[] = [
     key: 'subject',
     label: 'Subject',
     plannedWidth: 300,
-    priority: 10
+    priority: 10,
+    alwaysShow: true
   },
   {
     alwaysHidden: true,
@@ -166,10 +172,19 @@ const columns: IGenericListColumn[] = [
   },
   {
     alwaysHidden: true,
-    key: 'creationDate',
-    label: 'Creation date',
+    key: 'nickName',
+    label: 'Nick name',
     plannedWidth: 200,
-    priority: 1
+    priority: 1,
+    renderer: (label, value) => {
+      return (
+        <>
+          <Label style={{ color: 'red' }}>{label}</Label>
+          <span>CUSTOM {value}</span>
+          <button>Edit</button>
+        </>
+      );
+    }
   },
   {
     alwaysHidden: true,
@@ -190,118 +205,117 @@ const columns: IGenericListColumn[] = [
     key: 'status',
     label: 'Status',
     plannedWidth: 200,
-    priority: 5
+    priority: 5,
+    alwaysShow: true
   }
 ];
 
-export interface IRow {
-  id: number;
-  subject: string;
-  customerClaimNumber: number;
-  equipmentId: string;
-  detailedProblemDescription: string;
-  createdByName: string;
-  status: string;
-}
+const statuses = ['Draft', 'In progress', 'Completed'];
 
-export const rows: IRow[] = [
-  {
-    id: 1,
-    subject: 'Subject',
-    customerClaimNumber: 1234,
-    equipmentId: 'Equip1',
-    detailedProblemDescription: 'Details124 Details',
-    createdByName: 'Jokke dokke',
-    status: 'In progres'
-  },
-  {
-    id: 2,
-    subject: 'Subject',
-    customerClaimNumber: 1234,
-    equipmentId: 'Equip1',
-    detailedProblemDescription: 'Details124 Details',
-    createdByName: 'Jokke dokke',
-    status: 'In progres'
-  },
-  {
-    id: 3,
-    subject: 'Subject',
-    customerClaimNumber: 1234,
-    equipmentId: 'Equip1',
-    detailedProblemDescription: 'Details124 Details',
-    createdByName: 'Jokke dokke',
-    status: 'In progres'
-  },
-  {
-    id: 4,
-    subject: 'Subject',
-    customerClaimNumber: 1234,
-    equipmentId: 'Equip1',
-    detailedProblemDescription: 'Details124 Details',
-    createdByName: 'Jokke dokke',
-    status: 'In progres'
-  }
-];
-
-export const getVisibleColumns = (columns: IGenericListColumn[]) => {
-  return columns.filter(column => !column.alwaysHidden);
-};
-
-const getColumnsInWidth = (columns: IGenericListColumn[]): IWidthColumns[] => {
-  const offset = 300;
-  const columnsToShow = getVisibleColumns(columns);
-  columnsToShow.sort((a: IGenericListColumn, b: IGenericListColumn) => {
-    return b.priority - a.priority;
-  });
-
-  const columnWidths: IWidthColumns[] = [];
-  let currentWidth = offset;
-  columnsToShow.map(column => {
-    currentWidth += column.plannedWidth;
-    columnWidths.push({ key: column.key, width: currentWidth });
-  });
-
-  return columnWidths;
-};
-
-const getTestdata = (amount: number): IRow[] => {
+const getTestdata = (startNum: number, amount: number): IRow[] => {
   const dataArray = [];
 
   for (let i = 0; i < amount; i++) {
     dataArray.push({
-      id: i + 1,
-      subject: 'Subject',
-      customerClaimNumber: 1234 + i,
+      id: startNum + (i + 1),
+      subject: 'Subject' + (startNum + i),
+      customerClaimNumber: 1234 - i,
       equipmentId: 'Equip1',
-      detailedProblemDescription: 'Details124 Details',
+      nickName: 'Nickname' + (startNum + i),
+      detailedProblemDescription: 'Details details, its all in the details',
       createdByName: 'Jokke dokke',
-      status: 'In progres'
+      status: statuses[Math.floor(Math.random() * statuses.length - 1) + 1]
     });
   }
 
   return dataArray;
 };
 
-class App extends React.Component {
-  public columnsInWidth = getColumnsInWidth(columns);
-  public rows = getTestdata(1000);
+export interface ISort {
+  key: string;
+  asc: boolean;
+}
+
+export interface IFilter {
+  key: string;
+  value: string;
+}
+
+interface IAppState {
+  sort?: ISort;
+  filter?: IFilter;
+  rows: IRow[];
+}
+
+class App extends React.Component<{}, IAppState> {
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      filter: undefined,
+      sort: { key: 'id', asc: true },
+      rows: getTestdata(0, 100)
+    };
+
+    this.filter = this.filter.bind(this);
+    this.sort = this.sort.bind(this);
+    this.addRows = this.addRows.bind(this);
+  }
+
+  public filter() {
+    if (this.state.filter) {
+      this.setState({ filter: undefined });
+    } else {
+      this.setState({
+        filter: {
+          key: 'status',
+          value: 'Draft'
+        }
+      });
+    }
+  }
+
+  public sort() {
+    if (this.state.sort && this.state.sort.key === 'status') {
+      this.setState({ sort: { key: 'id', asc: true } });
+    } else {
+      this.setState({
+        sort: {
+          key: 'status',
+          asc: true
+        }
+      });
+    }
+  }
+
+  public addRows() {
+    const currentRows = this.state.rows;
+    const plusRows = getTestdata(currentRows.length, 50);
+    const moreRows = currentRows.concat(plusRows);
+    this.setState({ rows: moreRows });
+  }
 
   public render() {
     return (
       <SApp>
-        <LeftPanel />
-        <Component>
-          {this.rows.map(row => {
-            return (
-              <Row
-                key={row.id}
-                row={row}
-                columns={columns}
-                columnWidths={this.columnsInWidth}
-              />
-            );
-          })}
-        </Component>
+        <LeftPanel>
+          <div>
+            <h4>Filter</h4>
+            <Button onClick={this.filter}>Filter only drafts</Button>
+          </div>
+          <div>
+            <h4>Sort</h4>
+            <Button onClick={this.sort}>Sort with status</Button>
+          </div>
+          <Button style={{ marginTop: '24px' }} onClick={this.addRows}>
+            Add +50 random rows
+          </Button>
+        </LeftPanel>
+        <Table
+          rows={this.state.rows}
+          columns={columns}
+          filter={this.state.filter}
+          sort={this.state.sort}
+        />
       </SApp>
     );
   }

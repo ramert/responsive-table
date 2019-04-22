@@ -1,2 +1,2 @@
-export { Component } from './Table';
-export { Row } from './Row';
+export { Table, IWidthColumns } from './Table';
+export { Row, IRow } from './Row';

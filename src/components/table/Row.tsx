@@ -92,6 +92,8 @@ const ExpandedRow = styled.div<IColumn>`
     if (props.$alwaysShow) {
       return 'display: none';
     } else if (props.$widthToShow) {
+      // tslint:disable-next-line:no-console
+      console.log(props.$widthToShow);
       return `display: none;
         @media (max-width: ${props.$widthToShow}px) {
         display: block;

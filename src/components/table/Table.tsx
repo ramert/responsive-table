@@ -18,12 +18,39 @@ interface ITableProps {
   columns: IGenericListColumn[];
 }
 
-export class Table extends React.Component<ITableProps> {
-  public columnsInWidth: IWidthColumns[];
+interface ITableState {
+  offset: number;
+  columnWidths: IWidthColumns[];
+}
+
+export class Table extends React.Component<ITableProps, ITableState> {
+  public ref: React.RefObject<any>;
 
   constructor(props: ITableProps) {
     super(props);
-    this.columnsInWidth = this.getColumnsInWidth(this.props.columns);
+    this.ref = React.createRef();
+    this.state = {
+      offset: 0,
+      columnWidths: this.getColumnsInWidth(this.props.columns, 0)
+    };
+  }
+
+  public componentDidMount() {
+    window.addEventListener('resize', this.resize.bind(this));
+    this.resize();
+  }
+
+  public resize() {
+    if (this.ref && this.ref.current.offsetWidth > 0) {
+      const newOffset = window.innerWidth - this.ref.current.offsetWidth;
+
+      if (newOffset !== this.state.offset) {
+        this.setState({
+          offset: newOffset,
+          columnWidths: this.getColumnsInWidth(this.props.columns, newOffset)
+        });
+      }
+    }
   }
 
   public render() {
@@ -31,14 +58,14 @@ export class Table extends React.Component<ITableProps> {
     const filteredAndSortedRows = this.sortAndFilter(rows, sort, filter);
 
     return (
-      <TableBlock>
+      <TableBlock ref={this.ref}>
         {filteredAndSortedRows.map(row => {
           return (
             <Row
               key={row.id}
               row={row}
               columns={columns}
-              columnWidths={this.columnsInWidth}
+              columnWidths={this.state.columnWidths}
             />
           );
         })}
@@ -50,8 +77,10 @@ export class Table extends React.Component<ITableProps> {
     return columns.filter(column => !column.alwaysHidden);
   }
 
-  public getColumnsInWidth(columns: IGenericListColumn[]): IWidthColumns[] {
-    const offset = 300;
+  public getColumnsInWidth(
+    columns: IGenericListColumn[],
+    offset: number
+  ): IWidthColumns[] {
     const columnsToShow = this.getVisibleColumns(columns);
     const sortedColumns = columnsToShow.sort(
       (a: IGenericListColumn, b: IGenericListColumn) => {

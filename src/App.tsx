@@ -5,11 +5,28 @@ import { Label } from './components/table/Row';
 
 const SApp = styled.div`
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  @media (min-width: 640px) {
+    flex-direction: row;
+  }
 `;
 
 const LeftPanel = styled.div`
-  min-width: 300px;
+  position: relative;
+  top: 0;
+  min-width: 200px;
+
+  @media (min-width: 640px) {
+    position: fixed;
+  }
+`;
+
+const RightPanel = styled.div`
+  display: flex;
+  flex: 1 0 auto;
+  @media (min-width: 640px) {
+    margin-left: 200px;
+  }
 `;
 
 const Button = styled.button`
@@ -119,7 +136,7 @@ const columns: IGenericListColumn[] = [
   {
     key: 'subject',
     label: 'Subject',
-    plannedWidth: 300,
+    plannedWidth: 200,
     priority: 10,
     alwaysShow: true
   },
@@ -204,7 +221,7 @@ const columns: IGenericListColumn[] = [
   {
     key: 'status',
     label: 'Status',
-    plannedWidth: 200,
+    plannedWidth: 120,
     priority: 5,
     alwaysShow: true
   }
@@ -306,16 +323,19 @@ class App extends React.Component<{}, IAppState> {
             <h4>Sort</h4>
             <Button onClick={this.sort}>Sort with status</Button>
           </div>
-          <Button style={{ marginTop: '24px' }} onClick={this.addRows}>
-            Add +50 random rows
-          </Button>
+          <div>
+            <h4>Test data</h4>
+            <Button onClick={this.addRows}>Add +50 random rows</Button>
+          </div>
         </LeftPanel>
-        <Table
-          rows={this.state.rows}
-          columns={columns}
-          filter={this.state.filter}
-          sort={this.state.sort}
-        />
+        <RightPanel>
+          <Table
+            rows={this.state.rows}
+            columns={columns}
+            filter={this.state.filter}
+            sort={this.state.sort}
+          />
+        </RightPanel>
       </SApp>
     );
   }
